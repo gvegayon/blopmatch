@@ -1,0 +1,5 @@
+^readme\.rmd$
+^readme\.md$
+playground
+^.*\.Rproj$
+^\.Rproj\.user$

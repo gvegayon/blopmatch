@@ -1,0 +1,33 @@
+---
+title: "Implementation of the BLOP Matching problem as a LP"
+author: "George G. Vega Yon"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Implementation of the BLOP Matching problem as a LP}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The problem for a given individual $i$ that is matched to $N$ others is as follows: 
+
+\begin{align}
+& \min\limits_{\{\lambda_j: j\neq i\}} \sum_{j \neq i} \lambda_j\left\|X_i-X_j\right\| \\
+\mbox{s.t.} \\
+& \sum_{j \neq i} \lambda_j x_{jk} = x_{ik}, \quad  k = 1,\dots, K \\
+& \sum_{j \neq i} \lambda_j = 1 \\
+& \lambda_j  \geq 0,\quad\forall j \neq i
+\end{align}
+
+Notice that, in practical terms, the $\|X_i - X_j\|$ values are considered to be constant. In the case of infeasible solutions, $i$ defines part of the convex hull, to approximate the solution we restate the problem adding slack variables as follows:
+
+\begin{align}
+& \min\limits_{\{\lambda_j: j\neq i\}} \sum_{j \neq i} \lambda_j\left\|X_i-X_j\right\| + \sum_{l = 1}^{K + 1}U\delta_l\\
+\mbox{s.t.} \\
+& \sum_{j \neq i} \lambda_j x_{jk} - \sum_{l = 1}^{K + 1}\delta_l = x_{ik}, \quad  k = 1,\dots, K \\
+& \sum_{j \neq i} \lambda_j - \sum_{l=1}^{K+1} \delta_l= 1 \\
+& \lambda_j  \geq 0,\quad \forall j \neq i \\
+& \delta_l \geq 0,\quad l = 1, \dots, K + 1
+\end{align}
+
+Where $U$ is a fixed constant currently equal to 3,000. A linear program with $N + K + 1$ parameters and $K + 1$ constraints.
