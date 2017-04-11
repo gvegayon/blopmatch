@@ -2,15 +2,15 @@
 % Please edit documentation in R/blopmatch.r
 \name{blop}
 \alias{blop}
-\alias{blopi_glpk}
 \alias{blopi_lpsolve}
+\alias{blopi_glpk}
 \title{Bilevel Optimization Problem Matching Solvers}
 \usage{
 blop(X, solver = "glpk")
 
-blopi_lpsolve(i, X)
+blopi_lpsolve(xi, X)
 
-blopi_glpk(i, X)
+blopi_glpk(xi, X)
 }
 \arguments{
 \item{X}{A matrix of size \eqn{N\times K}{N * K}. Matching parameters.}
@@ -50,4 +50,3 @@ plot(ans)
 \author{
 George G. Vega Yon
 }
-

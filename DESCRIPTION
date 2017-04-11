@@ -16,8 +16,12 @@ Imports:
     lpSolveAPI (>= 5.5.2.0-17),
     Rglpk (>= 0.6-2),
     stats,
-    graphics
-RoxygenNote: 5.0.1
+    graphics,
+    Rcpp,
+    RcppArmadillo
+RoxygenNote: 6.0.1
 Suggests: knitr,
-    rmarkdown
+    rmarkdown,
+    testthat
 VignetteBuilder: knitr
+LinkingTo: Rcpp, RcppArmadillo

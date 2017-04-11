@@ -28,13 +28,13 @@
 #' 
 blop <- function(X, solver="glpk") {
   # Solving the BLOP for each one
-  iseq <- 1:nrow(X)
+  iseq <- 1L:nrow(X)
   
   # Solving the problem
   ans <- if (solver == "glpk")
-    lapply(iseq, function(i, covars) blopi_glpk(i, covars), covars=X)
+    lapply(iseq, function(i, covars) blopi_glpk(covars[i,,drop=TRUE], covars[-i,,drop=FALSE]), covars=X)
   else if (solver == "lpsolve")
-    lapply(iseq, function(i, covars) blopi_lpsolve(i, covars), covars=X)
+    lapply(iseq, function(i, covars) blopi_lpsolve(covars[i,,drop=TRUE], covars[-i,,drop=FALSE]), covars=X)
   else stop("-solver- should be either 'glpk' or 'lpsolve'.")
   
   # Checking out which ones were't solved perfectly
@@ -59,37 +59,37 @@ blop <- function(X, solver="glpk") {
 #' which implements the lp_solver library.
 #' @rdname blop
 #' @export
-blopi_lpsolve <- function(i, X) {
+blopi_lpsolve <- function(xi, X) {
   # Constraints:
   #  sum(lambda) = 1 : 1
   #  lambda*xk' = xk : k 
   #  TOTAL: 1 + k
   #
   # Variables:
-  #  lambda: n - 1 
+  #  lambda: n
   #  slack variables: in the case of infeasibility: k + 1
   
   N <- nrow(X)
   K <- ncol(X)
   
-  my.lp <- lpSolveAPI::make.lp(1 + K, (N - 1) + (K + 1))
+  my.lp <- lpSolveAPI::make.lp(1 + K, N + (K + 1))
   
   # Setting columns ------------------------------------------------------------
   # lambda columns
-  for (j in 1:(N - 1))
+  for (j in 1:N)
     lpSolveAPI::set.column(my.lp, j, c(
-      1, X[-i, ,drop=FALSE][j, ]
+      1, X[j, , drop=TRUE]
     ))
   
   # Slack variables columns 
-  for (j in N:((N - 1) + (K + 1)))
+  for (j in (N + 1):(N + (K + 1)))
     lpSolveAPI::set.column(my.lp, j, c(
       rep(-1, K + 1)
     ))
   
   # Objective function ---------------------------------------------------------
   #  lambda*distance
-  D <- apply(X[-i,,drop=FALSE], 1, function(x) dist(rbind(x, X[i,])))
+  D <- apply(X, 1, function(x) dist(rbind(x, xi)))
   lpSolveAPI::set.objfn(
     my.lp, c(D, rep(1e3, K + 1))
   )
@@ -100,8 +100,8 @@ blopi_lpsolve <- function(i, X) {
   # lambda*x_k' = x_k == k
   # {1 = "<=", 2 = ">=", 3 = "="}
   lpSolveAPI::set.constr.type(my.lp, c(3, rep(3, K)))
-  lpSolveAPI::set.rhs(my.lp, c(1, X[i,]))
-  lpSolveAPI::set.bounds(my.lp, rep(0, (N - 1) + (K + 1)))
+  lpSolveAPI::set.rhs(my.lp, c(1, xi))
+  lpSolveAPI::set.bounds(my.lp, rep(0, N + (K + 1)))
   
   # Solving the problem
   ans <- lpSolveAPI::solve.lpExtPtr(my.lp)
@@ -109,11 +109,11 @@ blopi_lpsolve <- function(i, X) {
   structure(
     list(
       obj    = lpSolveAPI::get.objective(my.lp),
-      lambda = lpSolveAPI::get.variables(my.lp)[1:(N - 1)],
-      slack  = lpSolveAPI::get.variables(my.lp)[N:(N - 1 + K + 1)],
+      lambda = lpSolveAPI::get.variables(my.lp)[1:N],
+      slack  = lpSolveAPI::get.variables(my.lp)[(N + 1):(N + K + 1)],
       constr = lpSolveAPI::get.constraints(my.lp),
       status = ans,
-      xi     = X[i,,drop=FALSE]
+      xi     = xi
     ), class = "blopmatch_matchi"
   )
   
@@ -123,7 +123,7 @@ blopi_lpsolve <- function(i, X) {
 #' which implements the GNU Linear Programming Kit.
 #' @rdname blop
 #' @export
-blopi_glpk <- function(i, X) {
+blopi_glpk <- function(xi, X) {
   # Constraints:
   #  sum(lambda) = 1 : 1
   #  lambda*xk' = xk : k 
@@ -138,33 +138,33 @@ blopi_glpk <- function(i, X) {
   
   # Objective function ---------------------------------------------------------
   #  lambda*distance
-  D <- apply(X[-i,,drop=FALSE], 1, function(x) stats::dist(rbind(x, X[i,])))
+  D <- apply(X, 1, function(x) stats::dist(rbind(xi, x)))
   
   # Solving the LP
   ans <- Rglpk::Rglpk_solve_LP(
     obj   = c(D, rep(1e3, K + 1)),               # |lambda| + |slack|
     mat   = rbind(
-      c(rep(1, (N - 1)), rep(-1, K + 1)),        # sum(lambda + slack) = 1
+      c(rep(1, N), rep(-1, K + 1)),        # sum(lambda + slack) = 1
       cbind(
-        t(X[-i,,drop=FALSE]),                    # Proj(X) = X
+        t(X),                    # Proj(X) = X
         matrix(-1, nrow = K, ncol = (K + 1))     # Slack vars
       )
     ),
     dir    = rep("==", 3),
-    rhs    = c(1, X[i,]),
+    rhs    = c(1, xi),
     bounds = list(
-      lower = list(ind = 1L:(N - 1L), val = rep(0, N - 1L))
+      lower = list(ind = 1L:N, val = rep(0, N))
     )
   )
   
   structure(
     list(
       obj    = ans$objval,
-      lambda = ans$solution[1:(N - 1)],
-      slack  = ans$solution[N:(N - 1 + K + 1)],
+      lambda = ans$solution[1L:N],
+      slack  = ans$solution[(N + 1L):(N + K + 1L)],
       constr = NA,
       status = ans$status,
-      xi     = X[i,,drop=FALSE]
+      xi     = xi
     ), class = "blopmatch_matchi"
   )
   
