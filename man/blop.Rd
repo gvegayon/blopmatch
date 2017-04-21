@@ -17,7 +17,7 @@ blopi_glpk(xi, X)
 
 \item{solver}{A character scalar. Either \code{"glpk"} or \code{"lpsolve"}.}
 
-\item{i}{Integer scalar. Observation to which the projection should be done.}
+\item{xi}{Numeric vector of length \eqn{k}. Ith individual covariates.}
 }
 \value{
 In the case of \code{blop}, a list of class \code{blopmatch_match}:

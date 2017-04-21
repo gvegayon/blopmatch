@@ -8,9 +8,32 @@ using namespace Rcpp;
 //' @template mat
 //' @templateVar X 1
 //' @templateVar Treat 1
+//' @param zeroindex Integer scalar. Added to the resulting index.
 //' @return A list of length \eqn{n} specifying for each i to which individuals
 //' each j != i will be matched.
 //' @export 
+//' 
+//' @examples
+//' # Asigning matching groups for lalonde
+//' 
+//' data(lalonde, package = "MatchIt")
+//' dat <- lalonde
+//' 
+//' # Match (no exact)
+//' m_noexact <- matching_group(cbind(rep(1, nrow(dat))), dat$treat)
+//' 
+//' # How many matches?
+//' table(sapply(m_noexact, length))
+//' table(dat$treat)
+//' 
+//' # What if we ask exact match on black
+//' 
+//' m_exact <- matching_group(
+//'   as.matrix(dat[,"black",drop=FALSE]),
+//'   dat$treat)
+//' 
+//' table(sapply(m_exact, length))
+//' with(dat, table(treat, black))
 // [[Rcpp::export]]
 List matching_group(
   const arma::mat & X,
@@ -70,6 +93,8 @@ List matching_group(
 //' @templateVar W 1
 //' @param p Numeric scalar.
 //' @export
+//' 
+//' 
 // [[Rcpp::export]]
 arma::mat generalized_norm(
     const arma::mat & X, 

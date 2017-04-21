@@ -10,6 +10,8 @@ matching_group(X, Treat, zeroindex = 1L)
 \item{X}{Numeric matrix of size \eqn{n\times K}{n*K}.}
 
 \item{Treat}{Integer vector of size \eqn{n}. Group indicator. Can be either -1 (no group), 0 (control) or 1 (treatment).}
+
+\item{zeroindex}{Integer scalar. Added to the resulting index.}
 }
 \value{
 A list of length \eqn{n} specifying for each i to which individuals
@@ -17,4 +19,26 @@ each j != i will be matched.
 }
 \description{
 Finds matching group
+}
+\examples{
+# Asigning matching groups for lalonde
+
+data(lalonde, package = "MatchIt")
+dat <- lalonde
+
+# Match (no exact)
+m_noexact <- matching_group(cbind(rep(1, nrow(dat))), dat$treat)
+
+# How many matches?
+table(sapply(m_noexact, length))
+table(dat$treat)
+
+# What if we ask exact match on black
+
+m_exact <- matching_group(
+  as.matrix(dat[,"black",drop=FALSE]),
+  dat$treat)
+
+table(sapply(m_exact, length))
+with(dat, table(treat, black))
 }

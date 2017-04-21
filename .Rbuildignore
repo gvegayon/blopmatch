@@ -3,3 +3,4 @@
 playground
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^man-roxygen$

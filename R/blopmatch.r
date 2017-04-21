@@ -5,8 +5,8 @@
 #' This function is a wrapper of both \code{blopi_lpsolve} and \code{blopi_glpk}.
 #' 
 #' @param X A matrix of size \eqn{N\times K}{N * K}. Matching parameters.
-#' @param i Integer scalar. Observation to which the projection should be done.
 #' @param solver A character scalar. Either \code{"glpk"} or \code{"lpsolve"}.
+#' @param xi Numeric vector of length \eqn{k}. Ith individual covariates.
 #' @author George G. Vega Yon
 #' 
 #' @return In the case of \code{blop}, a list of class \code{blopmatch_match}:
@@ -47,7 +47,7 @@ blop <- function(X, solver="glpk") {
       X       = X,
       X_pred  = do.call("rbind", lapply(iseq, function(i) {
         l <- ans[[i]]$lambda
-        colSums(l*X[-i,,drop=FALSE])/sum(l)
+        matrix((l/sum(l)) %*% X[-i,,drop=FALSE], nrow=1)
       }))
     ),
     class = "blopmatch_match"
@@ -109,7 +109,9 @@ blopi_lpsolve <- function(xi, X) {
   structure(
     list(
       obj    = lpSolveAPI::get.objective(my.lp),
-      lambda = lpSolveAPI::get.variables(my.lp)[1:N],
+      lambda = methods::as(
+        matrix(lpSolveAPI::get.variables(my.lp)[1:N], nrow=1),
+        "dgCMatrix"),
       slack  = lpSolveAPI::get.variables(my.lp)[(N + 1):(N + K + 1)],
       constr = lpSolveAPI::get.constraints(my.lp),
       status = ans,
@@ -160,7 +162,10 @@ blopi_glpk <- function(xi, X) {
   structure(
     list(
       obj    = ans$objval,
-      lambda = ans$solution[1L:N],
+      lambda = methods::as(
+        matrix(ans$solution[1L:N], nrow=1),
+        "dgCMatrix"
+        ),
       slack  = ans$solution[(N + 1L):(N + K + 1L)],
       constr = NA,
       status = ans$status,

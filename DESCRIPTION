@@ -18,7 +18,10 @@ Imports:
     stats,
     graphics,
     Rcpp,
-    RcppArmadillo
+    RcppArmadillo,
+    Matrix,
+    methods,
+    MatchIt
 RoxygenNote: 6.0.1
 Suggests: knitr,
     rmarkdown,
