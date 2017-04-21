@@ -4,3 +4,6 @@ playground
 ^.*\.Rproj$
 ^\.Rproj\.user$
 ^man-roxygen$
+^\.travis\.yml$
+^appveyor\.yml$
+^codecov\.yml$

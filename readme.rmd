@@ -1,8 +1,11 @@
 ---
+title: 'blopmatch: Matching Estimator based on a Bilevel Optimization Problem'
 output: github_document
 ---
 
-# blopmatch: Matching Estimator based on a Bilevel Optimization Problem
+[![Travis-CI Build Status](https://travis-ci.org/gvegayon/blopmatch.svg?branch=master)](https://travis-ci.org/gvegayon/blopmatch)
+[![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/github/gvegayon/blopmatch?branch=master&svg=true)](https://ci.appveyor.com/project/gvegayon/blopmatch)
+[![Coverage Status](https://img.shields.io/codecov/c/github/gvegayon/blopmatch/master.svg)](https://codecov.io/github/gvegayon/blopmatch?branch=master)
 
 An implementation of Díaz, Rau and Rivera (2015) matching estimator for causal inference.
   The authors propose a matching estimator based on a Bilevel Optimization Problem. In raw terms,
@@ -37,13 +40,13 @@ set.seed(1331)
 X <- matrix(rnorm(20*2), ncol=2)
 
 # Matching individual 5 to the rest
-ans <- blopi_glpk(5, X)
+ans <- blopi_glpk(X[5,,drop=FALSE], X[-5,,drop=FALSE])
 
 # Resulting weights (matches)
 ans$lambda
 
 # Target vs Projected
 X[5,]
-colSums(ans$lambda*X[-5,])
+ans$lambda %*% X[-5,]
 ```
 

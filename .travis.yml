@@ -1,0 +1,15 @@
+# R for travis: see documentation at https://docs.travis-ci.com/user/languages/r
+
+language: R
+sudo: false
+cache: packages
+
+os:
+  - linux
+  - osx
+
+before_install:
+  - if [ $TRAVIS_OS_NAME == "osx" ]; then curl -O http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2 && sudo tar fvxz gfortran-4.8.2-darwin13.tar.bz2 -C /; rm gfortran-4.8.2-darwin13.tar.bz2 ; fi
+
+after_success:
+  - if [ $TRAVIS_OS_NAME == "linux" ]; then Rscript -e 'covr::codecov()'; fi
