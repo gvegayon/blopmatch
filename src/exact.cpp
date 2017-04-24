@@ -111,7 +111,7 @@ arma::mat generalized_norm(
   
   for (i = 0u; i < n; i++)
     for (j = i; j < n; j++) {
-      ans.at(i,j) = std::pow(arma::dot((X.row(i) - X.row(j))* W, (X.row(i) - X.row(j))), .5);
+      ans.at(i,j) = std::pow(arma::dot((X.row(i) - X.row(j))* W, (X.row(i) - X.row(j))), .5*p);
       if (i != j) ans.at(j,i) = ans.at(i,j);
     }
     
