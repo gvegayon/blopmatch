@@ -7,11 +7,13 @@ cache: packages
 os:
   - linux
   - osx
+  
+apt_packages: libglpk-dev
+
+brew_packages: hombrew/sience/glpk
 
 before_install:
-  - if [ $TRAVIS_OS_NAME == "linux" ]; then sudo apt-get install libglpk-dev; fi
-  - if [ $TRAVIS_OS_NAME == "osx" ]; then brew update && brew install glpk; fi
-  - if [ $TRAVIS_OS_NAME == "osx" ]; then curl -O http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2 && sudo tar fvxz gfortran-4.8.2-darwin13.tar.bz2 -C /; rm gfortran-4.8.2-darwin13.tar.bz2 ; fi
+  - if [[ $TRAVIS_OS_NAME == "osx" ]]; then curl -O http://r.research.att.com/libs/gfortran-4.8.2-darwin13.tar.bz2 && sudo tar fvxz gfortran-4.8.2-darwin13.tar.bz2 -C /; rm gfortran-4.8.2-darwin13.tar.bz2 ; fi
 
 after_success:
-  - if [ $TRAVIS_OS_NAME == "linux" ]; then Rscript -e 'covr::codecov()'; fi
+  - if [[ $TRAVIS_OS_NAME == "linux" ]]; then Rscript -e 'covr::codecov()'; fi
