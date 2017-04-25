@@ -4,9 +4,13 @@
 #' \code{blop} matches all rows \eqn{i} in \code{X} to \eqn{j \neq i}{j!=i}.
 #' This function is a wrapper of both \code{blopi_lpsolve} and \code{blopi_glpk}.
 #' 
-#' @param X A matrix of size \eqn{N\times K}{N * K}. Matching parameters.
+#' @template mat
+#' @templateVar X 1
+#' @templateVar Treat 1
+#' @templateVar exact 1
 #' @param solver A character scalar. Either \code{"glpk"} or \code{"lpsolve"}.
 #' @param xi Numeric vector of length \eqn{k}. Ith individual covariates.
+#' @param D Numeric vector. Distances vector (internal use only).
 #' @author George G. Vega Yon
 #' 
 #' @return In the case of \code{blop}, a list of class \code{blopmatch_match}:
@@ -26,29 +30,74 @@
 #' 
 #' plot(ans)
 #' 
-blop <- function(X, solver="glpk") {
+#' data(lalonde, package="MatchIt")
+#' 
+blop <- function(X, Treat = rep(-1, nrow(X)), exact = NULL, solver="glpk") {
   # Solving the BLOP for each one
   iseq <- 1L:nrow(X)
   
+  # Selecting the matching group
+  groups <- matching_group(Treat, exact)
+  
+  # Computing Distances
+  D <- weighted_norm(X, diag(ncol(X)))
+  
   # Solving the problem
   ans <- if (solver == "glpk")
-    lapply(iseq, function(i, covars) blopi_glpk(covars[i,,drop=TRUE], covars[-i,,drop=FALSE]), covars=X)
+    lapply(iseq, function(i, covars) {
+      
+      # Checking if it can be matched or not
+      if (!length(groups[[i]])) {
+        warning("Row ", i, " couldn't be matched.")
+        return(NULL)
+      }
+        
+      # Solving the blop
+      c(
+        blopi_glpk(
+          xi = covars[i,,drop=TRUE],
+          X  = covars[groups[[i]],,drop=FALSE],
+          D = D[i, groups[[i]]]
+          ),
+        list(against = groups[[i]])
+      )
+      
+      
+      }, covars=X)
   else if (solver == "lpsolve")
-    lapply(iseq, function(i, covars) blopi_lpsolve(covars[i,,drop=TRUE], covars[-i,,drop=FALSE]), covars=X)
+    lapply(iseq, function(i, covars) {
+      
+      # Checking if it can be matched or not
+      if (!length(groups[[i]])) {
+        warning("Row ", i, " couldn't be matched.")
+        return(NULL)
+      }
+      
+      # Solving the blop
+      c(
+        blopi_lpsolve(
+          xi = covars[i,,drop=TRUE],
+          X  = covars[groups[[i]],,drop=FALSE],
+          D  = D[i, groups[[i]]]
+          ),
+        list(against = groups[[i]])
+      )
+      
+      }, covars=X)
   else stop("-solver- should be either 'glpk' or 'lpsolve'.")
   
   # Checking out which ones were't solved perfectly
-  relaxed <- which(colSums(sapply(ans, "[[", "slack")) != 0)
+  status <- sapply(ans, function(x) {
+    if (!length(x)) -1
+    else if (any(x[["slack"]] != 0)) 1
+    else 0
+  })
   
   structure(
     list(
       matches = ans,
-      relaxed = relaxed,
-      X       = X,
-      X_pred  = do.call("rbind", lapply(iseq, function(i) {
-        l <- ans[[i]]$lambda
-        matrix((l/sum(l)) %*% X[-i,,drop=FALSE], nrow=1)
-      }))
+      status  = status,
+      X       = X
     ),
     class = "blopmatch_match"
   )
@@ -59,7 +108,7 @@ blop <- function(X, solver="glpk") {
 #' which implements the lp_solver library.
 #' @rdname blop
 #' @export
-blopi_lpsolve <- function(xi, X) {
+blopi_lpsolve <- function(xi, X, D = NULL) {
   # Constraints:
   #  sum(lambda) = 1 : 1
   #  lambda*xk' = xk : k 
@@ -89,7 +138,9 @@ blopi_lpsolve <- function(xi, X) {
   
   # Objective function ---------------------------------------------------------
   #  lambda*distance
-  D <- apply(X, 1, function(x) dist(rbind(x, xi)))
+  if (!length(D))
+    D <- apply(X, 1, function(x) dist(rbind(x, xi)))
+  
   lpSolveAPI::set.objfn(
     my.lp, c(D, rep(1e3, K + 1))
   )
@@ -125,7 +176,7 @@ blopi_lpsolve <- function(xi, X) {
 #' which implements the GNU Linear Programming Kit.
 #' @rdname blop
 #' @export
-blopi_glpk <- function(xi, X) {
+blopi_glpk <- function(xi, X, D = NULL) {
   # Constraints:
   #  sum(lambda) = 1 : 1
   #  lambda*xk' = xk : k 
@@ -140,7 +191,8 @@ blopi_glpk <- function(xi, X) {
   
   # Objective function ---------------------------------------------------------
   #  lambda*distance
-  D <- apply(X, 1, function(x) stats::dist(rbind(xi, x)))
+  if (!length(D))
+    D <- apply(X, 1, function(x) stats::dist(rbind(xi, x)))
   
   # Solving the LP
   ans <- Rglpk::Rglpk_solve_LP(
@@ -152,7 +204,7 @@ blopi_glpk <- function(xi, X) {
         matrix(-1, nrow = K, ncol = (K + 1))     # Slack vars
       )
     ),
-    dir    = rep("==", 3),
+    dir    = rep("==", K + 1),
     rhs    = c(1, xi),
     bounds = list(
       lower = list(ind = 1L:N, val = rep(0, N))

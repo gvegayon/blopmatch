@@ -6,18 +6,24 @@
 \alias{blopi_glpk}
 \title{Bilevel Optimization Problem Matching Solvers}
 \usage{
-blop(X, solver = "glpk")
+blop(X, Treat = rep(-1, nrow(X)), exact = NULL, solver = "glpk")
 
-blopi_lpsolve(xi, X)
+blopi_lpsolve(xi, X, D = NULL)
 
-blopi_glpk(xi, X)
+blopi_glpk(xi, X, D = NULL)
 }
 \arguments{
-\item{X}{A matrix of size \eqn{N\times K}{N * K}. Matching parameters.}
+\item{X}{Numeric matrix of size \eqn{n\times K}{n*K}.}
+
+\item{Treat}{Integer vector of size \eqn{n}. Group indicator. Can be either -1 (no group), 0 (control) or 1 (treatment).}
+
+\item{exact}{Numeric matrix with \eqn{n} rows. When specified, exact matching is performed on those variables (see \code{\link{matching_group}}).}
 
 \item{solver}{A character scalar. Either \code{"glpk"} or \code{"lpsolve"}.}
 
 \item{xi}{Numeric vector of length \eqn{k}. Ith individual covariates.}
+
+\item{D}{Numeric vector. Distances vector (internal use only).}
 }
 \value{
 In the case of \code{blop}, a list of class \code{blopmatch_match}:
@@ -32,6 +38,8 @@ constraints were not binding (infeasibility of the problem).}
 \code{blop} matches all rows \eqn{i} in \code{X} to \eqn{j \neq i}{j!=i}.
 This function is a wrapper of both \code{blopi_lpsolve} and \code{blopi_glpk}.
 
+\code{}
+
 \code{blopi_lpsolve} solves the problem using the \pkg{lpSolverAPI} R package
 which implements the lp_solver library.
 
@@ -45,6 +53,8 @@ X <- matrix(rnorm(10*2), ncol=2)
 ans <- blop(X)
 
 plot(ans)
+
+data(lalonde, package="MatchIt")
 
 }
 \author{

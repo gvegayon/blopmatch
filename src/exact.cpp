@@ -4,45 +4,15 @@ using namespace Rcpp;
 
 // [[Rcpp::depends(RcppArmadillo)]]
 
-//' Finds matching group
-//' @template mat
-//' @templateVar X 1
-//' @templateVar Treat 1
-//' @param zeroindex Integer scalar. Added to the resulting index.
-//' @return A list of length \eqn{n} specifying for each i to which individuals
-//' each j != i will be matched.
-//' @export 
-//' 
-//' @examples
-//' # Asigning matching groups for lalonde
-//' 
-//' data(lalonde, package = "MatchIt")
-//' dat <- lalonde
-//' 
-//' # Match (no exact)
-//' m_noexact <- matching_group(cbind(rep(1, nrow(dat))), dat$treat)
-//' 
-//' # How many matches?
-//' table(sapply(m_noexact, length))
-//' table(dat$treat)
-//' 
-//' # What if we ask exact match on black
-//' 
-//' m_exact <- matching_group(
-//'   as.matrix(dat[,"black",drop=FALSE]),
-//'   dat$treat)
-//' 
-//' table(sapply(m_exact, length))
-//' with(dat, table(treat, black))
 // [[Rcpp::export]]
-List matching_group(
-  const arma::mat & X,
+List matching_group_cpp(
   const arma::ivec & Treat,
+  const arma::mat & exact,
   int zeroindex = 1
 ) {
   
-  unsigned int n = X.n_rows, i, j;
-  unsigned int K = X.n_cols, k;
+  unsigned int n = exact.n_rows, i, j;
+  unsigned int K = exact.n_cols, k;
 
   std::vector< std::vector< arma::uword > > ans0(n);
 
@@ -56,15 +26,15 @@ List matching_group(
       match = true;
       for (k = 0u; k < K; k++) {
         
-        // Opposit groups?
-        if (Treat.at(i) >= 0 && Treat.at(i) == Treat.at(j)) {
+        // Opposite groups?
+        if ((Treat.at(i) >= 0) && (Treat.at(i) == Treat.at(j))) {
           match = false;
           break;
         }
         
         // If any attribute in E is different, then 
         // no exact and return false
-        if (X.at(i, k) != X.at(j, k)) {
+        if (exact.at(i, k) != exact.at(j, k)) {
           match = false;
           break;
         }
@@ -87,16 +57,34 @@ List matching_group(
   return ans;
 }
 
-//' Computes Quadratic Form Distance
+//' Weighted Norm
+//' 
 //' @template mat
 //' @templateVar X 1
 //' @templateVar W 1
 //' @param p Numeric scalar.
 //' @export
 //' 
+//' @details
+//' Computes
+//' \deqn{
+//' \left[(\mathbf{x}_i - \mathbf{x}_j)  \times \mathbf{W} \times (\mathbf{x}_i - \mathbf{x}_j)^\mathbf{t}\right]^\frac{p}{2},
+//' \quad\forall i,j
+//' }{
+//' [(x_i - x_j) \%*\% W \%*\% (x_i - x_j)]^(p/2), for all i, j
+//' }
+//' 
+//' @return A square matrix of size \eqn{n\times n}{n * n}.
+//' @examples
+//' 
+//' set.seed(1231)
+//' X <- matrix(rnorm(20*2), ncol=2)
+//' W <- diag(2)
+//' 
+//' weighted_norm(X, W, 1.0)
 //' 
 // [[Rcpp::export]]
-arma::mat generalized_norm(
+arma::mat weighted_norm(
     const arma::mat & X, 
     const arma::mat & W,
     double p = 1.0

@@ -6,29 +6,29 @@
 
 using namespace Rcpp;
 
-// matching_group
-List matching_group(const arma::mat& X, const arma::ivec& Treat, int zeroindex);
-RcppExport SEXP blopmatch_matching_group(SEXP XSEXP, SEXP TreatSEXP, SEXP zeroindexSEXP) {
+// matching_group_cpp
+List matching_group_cpp(const arma::ivec& Treat, const arma::mat& exact, int zeroindex);
+RcppExport SEXP blopmatch_matching_group_cpp(SEXP TreatSEXP, SEXP exactSEXP, SEXP zeroindexSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
     Rcpp::traits::input_parameter< const arma::ivec& >::type Treat(TreatSEXP);
+    Rcpp::traits::input_parameter< const arma::mat& >::type exact(exactSEXP);
     Rcpp::traits::input_parameter< int >::type zeroindex(zeroindexSEXP);
-    rcpp_result_gen = Rcpp::wrap(matching_group(X, Treat, zeroindex));
+    rcpp_result_gen = Rcpp::wrap(matching_group_cpp(Treat, exact, zeroindex));
     return rcpp_result_gen;
 END_RCPP
 }
-// generalized_norm
-arma::mat generalized_norm(const arma::mat& X, const arma::mat& W, double p);
-RcppExport SEXP blopmatch_generalized_norm(SEXP XSEXP, SEXP WSEXP, SEXP pSEXP) {
+// weighted_norm
+arma::mat weighted_norm(const arma::mat& X, const arma::mat& W, double p);
+RcppExport SEXP blopmatch_weighted_norm(SEXP XSEXP, SEXP WSEXP, SEXP pSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const arma::mat& >::type X(XSEXP);
     Rcpp::traits::input_parameter< const arma::mat& >::type W(WSEXP);
     Rcpp::traits::input_parameter< double >::type p(pSEXP);
-    rcpp_result_gen = Rcpp::wrap(generalized_norm(X, W, p));
+    rcpp_result_gen = Rcpp::wrap(weighted_norm(X, W, p));
     return rcpp_result_gen;
 END_RCPP
 }

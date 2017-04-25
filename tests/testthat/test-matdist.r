@@ -11,7 +11,7 @@ X[4, 1] <- X[1,1]
 
 # ------------------------------------------------------------------------------
 test_that("Exact match", {
-  ans <- matching_group(X, rep(-1, 7))
+  ans <- matching_group(rep(-1, 7), X)
   expect_equivalent(ans[[1]][,1], c(3, 7))
   expect_equivalent(ans[[3]][,1], c(1, 7))
   expect_equivalent(ans[[7]][,1], c(1, 3))
@@ -20,7 +20,7 @@ test_that("Exact match", {
 # ------------------------------------------------------------------------------
 test_that("Quadform distance", {
   # Diagonal
-  ans0 <- generalized_norm(X, diag(2), 1)
+  ans0 <- weighted_norm(X, diag(2), 1)
   ans1 <- as.matrix(dist(X))
   
   expect_equivalent(ans0, ans1)
@@ -41,8 +41,8 @@ test_that("Quadform distance", {
   
   W <- solve(var(X))
   
-  ans0 <- generalized_norm(X, W)
-  ans1 <- generalized_normR(X, W)
+  ans0 <- weighted_norm(X, W)
+  ans1 <- weighted_norm(X, W)
   
   expect_equivalent(ans0, ans1)
   
