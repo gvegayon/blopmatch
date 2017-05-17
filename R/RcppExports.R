@@ -10,7 +10,7 @@ matching_group_cpp <- function(Treat, exact, zeroindex = 1L) {
 #' @template mat
 #' @templateVar X 1
 #' @templateVar W 1
-#' @param p Numeric scalar.
+#' @templateVar p 1
 #' @export
 #' 
 #' @details

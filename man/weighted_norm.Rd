@@ -9,9 +9,9 @@ weighted_norm(X, W, p = 1)
 \arguments{
 \item{X}{Numeric matrix of size \eqn{n\times K}{n*K}.}
 
-\item{W}{Numeric matrix of size \eqn{K\times K}{K*K}.}
+\item{W}{Numeric matrix of size \eqn{K\times K}{K*K}. When \code{W} is equal to \code{solve(var(X))}, it is the Mahalanobis norm.}
 
-\item{p}{Numeric scalar.}
+\item{p}{Numeric scalar. See \code{\link{weighted_norm}}.}
 }
 \value{
 A square matrix of size \eqn{n\times n}{n * n}.

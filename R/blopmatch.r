@@ -7,19 +7,22 @@
 #' @template mat
 #' @templateVar X 1
 #' @templateVar Treat 1
+#' @templateVar W 1
+#' @templateVar p 1
 #' @templateVar exact 1
 #' @param solver A character scalar. Either \code{"glpk"} or \code{"lpsolve"}.
 #' @param xi Numeric vector of length \eqn{k}. Ith individual covariates.
 #' @param D Numeric vector. Distances vector (internal use only).
 #' @author George G. Vega Yon
 #' 
+#' @details Both \code{W} and \code{p} are passed to \code{\link{weighted_norm}}.
+#' 
 #' @return In the case of \code{blop}, a list of class \code{blopmatch_match}:
 #' 
 #' \item{matches}{A list of size \code{N} with the BLOP solutions}
-#' \item{relaxed}{An integer vector indicating in which of the \eqn{n} the
-#' constraints were not binding (infeasibility of the problem).}
+#' \item{status}{An integer vector of length \eqn{N}. A value equal to one indicates
+#' that the problem was binded.}
 #' \item{X}{Original matrix \code{X} passed to the function.}
-#' \item{X_pred}{A matrix of size \eqn{N\times K}{N * K} with the predicted values.}
 #' 
 #' @export
 #' @examples 
@@ -32,7 +35,14 @@
 #' 
 #' data(lalonde, package="MatchIt")
 #' 
-blop <- function(X, Treat = rep(-1, nrow(X)), exact = NULL, solver="glpk") {
+blop <- function(
+  X, 
+  Treat = rep(-1, nrow(X)), 
+  exact = NULL, 
+  solver="glpk",
+  W = diag(ncol(X)),
+  p = 1
+  ) {
   # Solving the BLOP for each one
   iseq <- 1L:nrow(X)
   
@@ -40,7 +50,7 @@ blop <- function(X, Treat = rep(-1, nrow(X)), exact = NULL, solver="glpk") {
   groups <- matching_group(Treat, exact)
   
   # Computing Distances
-  D <- weighted_norm(X, diag(ncol(X)))
+  D <- weighted_norm(X = X, W = W, p = p)
   
   # Solving the problem
   ans <- if (solver == "glpk")
@@ -51,7 +61,7 @@ blop <- function(X, Treat = rep(-1, nrow(X)), exact = NULL, solver="glpk") {
         warning("Row ", i, " couldn't be matched.")
         return(NULL)
       }
-        
+      
       # Solving the blop
       c(
         blopi_glpk(
@@ -61,6 +71,7 @@ blop <- function(X, Treat = rep(-1, nrow(X)), exact = NULL, solver="glpk") {
           ),
         list(against = groups[[i]])
       )
+      
       
       
       }, covars=X)
@@ -97,7 +108,12 @@ blop <- function(X, Treat = rep(-1, nrow(X)), exact = NULL, solver="glpk") {
     list(
       matches = ans,
       status  = status,
-      X       = X
+      X       = X,
+      Treat   = Treat,
+      exact   = exact,
+      solver  = solver,
+      W       = W,
+      p       = p
     ),
     class = "blopmatch_match"
   )
@@ -142,7 +158,7 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
     D <- apply(X, 1, function(x) dist(rbind(x, xi)))
   
   lpSolveAPI::set.objfn(
-    my.lp, c(D, rep(1e3, K + 1))
+    my.lp, c(D, rep(1, K + 1))
   )
   
   # Constraints ----------------------------------------------------------------
@@ -196,7 +212,7 @@ blopi_glpk <- function(xi, X, D = NULL) {
   
   # Solving the LP
   ans <- Rglpk::Rglpk_solve_LP(
-    obj   = c(D, rep(1e3, K + 1)),               # |lambda| + |slack|
+    obj   = c(D, rep(1, K + 1)),               # |lambda| + |slack|
     mat   = rbind(
       c(rep(1, N), rep(-1, K + 1)),        # sum(lambda + slack) = 1
       cbind(
@@ -208,7 +224,8 @@ blopi_glpk <- function(xi, X, D = NULL) {
     rhs    = c(1, xi),
     bounds = list(
       lower = list(ind = 1L:N, val = rep(0, N))
-    )
+    ),
+    control = list(presolve = FALSE, tm_limit = 500)
   )
   
   structure(
@@ -231,15 +248,15 @@ blopi_glpk <- function(xi, X, D = NULL) {
 #' @export
 print.blopmatch_match <- function(x, ...) {
   
-  N        <- nrow(x$X)
-  Nrelaxed <- length(x$relaxed) 
-  K        <- ncol(x$X)
+  N      <- nrow(x$X)
+  binded <- sum(x$status) 
+  K      <- ncol(x$X)
   
   
   cat(sprintf("BILEVEL OPTIMIZATION MATCHING PROBLEM\n"))
   cat(
     sep="",
-    sprintf("%% of perfect matches: %.2f%%\n", (1 - Nrelaxed/N) *100),
+    sprintf("%% of perfect matches: %.2f%%\n", (1 - binded/N) *100),
     sprintf("N: %i, K: %i\n", N, K)
   )
 }
@@ -248,7 +265,8 @@ print.blopmatch_match <- function(x, ...) {
 plot.blopmatch_match <- function(x, y=1:min(2, ncol(x$X)), ...) {
   
   plot(x$X[,y,drop=FALSE], pch=20, col="lightgray")
-  if (length(x$relaxed))
-    text(x$X[x$relaxed,y,drop=FALSE], labels = x$relaxed, col="red")
+  binded <- which(x$status == 1)
+  if (length(binded))
+    text(x$X[binded,y,drop=FALSE], labels = binded, col="red")
   
 }

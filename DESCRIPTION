@@ -2,11 +2,13 @@ Package: blopmatch
 Title: Matching Estimator based on a Bilevel Optimization Problem
 Version: 0.0.0.9000
 Authors@R: person("George", "Vega Yon", email = "g.vegayon@gmail.com", role = c("aut", "cre"))
-Description: An implementation of Díaz, Rau and Rivera (2015) matching estimator for causal inference.
-  The authors propose a matching estimator based on a Bilevel Optimization Problem. In raw terms,
-  the two problems are (1) finding a convex combination that (2) using the closets neighbors possible.
-  The solution to this problem allows computing Treatment Effect estimators that significantly improve
-  balance in case-control studies, and furthermore, can be used for data imputation.
+Description: An implementation of Díaz, Rau and Rivera (2015) matching estimator
+    for causal inference. The authors propose a matching estimator based on a
+    Bilevel Optimization Problem. In raw terms, the two problems are (1) finding a
+    convex combination that (2) using the closets neighbors possible. The solution
+    to this problem allows computing Treatment Effect estimators that significantly
+    improve balance in case-control studies, and furthermore, can be used for data
+    imputation.
 Depends:
     R (>= 3.3.2)
 License: MIT + file LICENSE
@@ -23,7 +25,8 @@ Imports:
     methods,
     MatchIt
 RoxygenNote: 6.0.1
-Suggests: knitr,
+Suggests:
+    knitr,
     rmarkdown,
     testthat,
     covr
