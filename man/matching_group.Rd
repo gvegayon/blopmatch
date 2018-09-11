@@ -19,8 +19,6 @@ each j != i will be matched.
 Given a variable \code{Treat}, \code{matching_group} enumerates the individuals
 towards each observation can be matched against. If \code{exact} is specified,
 then it performes exact match (see examples).
-
-\code{}
 }
 \details{
 In the most common case \code{Treat} will be either of \code{0} or

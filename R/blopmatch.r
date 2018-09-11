@@ -125,50 +125,54 @@ blop <- function(
 #' @rdname blop
 #' @export
 blopi_lpsolve <- function(xi, X, D = NULL) {
+  
+  # P0: Find the feasible match ------------------------------------------------
+  
+  # Problem:
+  #  (Z, phi) = argmin \sum_k (mu_k + eta_k)
+  #    s.t.
+  #    X_0\phi + \mu - v = x_i
+  #    \phi \in Simplex
+  #  But Z = X_0\phi can be plugged in, and the computed
   # Constraints:
-  #  sum(lambda) = 1 : 1
-  #  lambda*xk' = xk : k 
-  #  TOTAL: 1 + k
+  #  sum(lambda) = 1 : 1 (Simplex)
+  #  X_0\phi + \mu - v = x_i: k
+  #  TOTAL: k + 1
   #
   # Variables:
   #  lambda: n
-  #  slack variables: in the case of infeasibility: k + 1
+  #  mu, eta: k * 2
+  #  slack variables: 0
+  #  TOTAL: n + k*2 
   
   N <- nrow(X)
   K <- ncol(X)
   
-  my.lp <- lpSolveAPI::make.lp(1 + K, N + (K + 1))
+  my.lp <- lpSolveAPI::make.lp(K + 1, N + K*2)
   
   # Setting columns ------------------------------------------------------------
   # lambda columns
   for (j in 1:N)
-    lpSolveAPI::set.column(my.lp, j, c(
-      1, X[j, , drop=TRUE]
-    ))
+    lpSolveAPI::set.column(my.lp, j, c(X[j,], 1))
   
-  # Slack variables columns 
-  for (j in (N + 1):(N + (K + 1)))
-    lpSolveAPI::set.column(my.lp, j, c(
-      rep(-1, K + 1)
-    ))
+  # mu
+  for (j in (1:K + N))
+    lpSolveAPI::set.column(my.lp, j, c(rep(1, k), 0))
+  
+  # eta
+  for (j in (1:K + N + K))
+    lpSolveAPI::set.column(my.lp, j, c(rep(-1, k), 0))
   
   # Objective function ---------------------------------------------------------
-  #  lambda*distance
-  if (!length(D))
-    D <- apply(X, 1, function(x) dist(rbind(x, xi)))
-  
-  lpSolveAPI::set.objfn(
-    my.lp, c(D, rep(1, K + 1))
-  )
+  lpSolveAPI::set.objfn(my.lp, rep(1, N+K*2))
   
   # Constraints ----------------------------------------------------------------
   # Recall: We have 
   # sum(lambda) == 1: 1
-  # lambda*x_k' = x_k == k
   # {1 = "<=", 2 = ">=", 3 = "="}
-  lpSolveAPI::set.constr.type(my.lp, c(3, rep(3, K)))
-  lpSolveAPI::set.rhs(my.lp, c(1, xi))
-  lpSolveAPI::set.bounds(my.lp, rep(0, N + (K + 1)))
+  lpSolveAPI::set.constr.type(my.lp, rep(3, K+1))
+  lpSolveAPI::set.rhs(my.lp, c(xi, 1))
+  lpSolveAPI::set.bounds(my.lp, rep(0, N + 2*K))
   
   # Solving the problem
   ans <- lpSolveAPI::solve.lpExtPtr(my.lp)
@@ -179,7 +183,7 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
       lambda = methods::as(
         matrix(lpSolveAPI::get.variables(my.lp)[1:N], nrow=1),
         "dgCMatrix"),
-      slack  = lpSolveAPI::get.variables(my.lp)[(N + 1):(N + K + 1)],
+      slack  = lpSolveAPI::get.variables(my.lp)[(N + 1)],
       constr = lpSolveAPI::get.constraints(my.lp),
       status = ans,
       xi     = xi

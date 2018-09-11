@@ -10,7 +10,8 @@ teffect(X, y, effect = "ate", ...)
 
 \method{teffect}{default}(X, y, Treat, effect = "ate", ...)
 
-\method{teffect}{blopmatch_match}(x, y, effect = "ate", X = NULL, ...)
+\method{teffect}{blopmatch_match}(x, y, effect = "ate", tol = 1e-20,
+  X = NULL, ...)
 }
 \arguments{
 \item{X}{Numeric matrix of size \eqn{n\times K}{n*K}.}

@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 // matching_group_cpp
 List matching_group_cpp(const arma::ivec& Treat, const arma::mat& exact, int zeroindex);
-RcppExport SEXP blopmatch_matching_group_cpp(SEXP TreatSEXP, SEXP exactSEXP, SEXP zeroindexSEXP) {
+RcppExport SEXP _blopmatch_matching_group_cpp(SEXP TreatSEXP, SEXP exactSEXP, SEXP zeroindexSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -21,7 +21,7 @@ END_RCPP
 }
 // weighted_norm
 arma::mat weighted_norm(const arma::mat& X, const arma::mat& W, double p);
-RcppExport SEXP blopmatch_weighted_norm(SEXP XSEXP, SEXP WSEXP, SEXP pSEXP) {
+RcppExport SEXP _blopmatch_weighted_norm(SEXP XSEXP, SEXP WSEXP, SEXP pSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -31,4 +31,15 @@ BEGIN_RCPP
     rcpp_result_gen = Rcpp::wrap(weighted_norm(X, W, p));
     return rcpp_result_gen;
 END_RCPP
+}
+
+static const R_CallMethodDef CallEntries[] = {
+    {"_blopmatch_matching_group_cpp", (DL_FUNC) &_blopmatch_matching_group_cpp, 3},
+    {"_blopmatch_weighted_norm", (DL_FUNC) &_blopmatch_weighted_norm, 3},
+    {NULL, NULL, 0}
+};
+
+RcppExport void R_init_blopmatch(DllInfo *dll) {
+    R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+    R_useDynamicSymbols(dll, FALSE);
 }

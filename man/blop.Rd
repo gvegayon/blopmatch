@@ -44,14 +44,6 @@ that the problem was binded.}
 \description{
 \code{blop} matches all rows \eqn{i} in \code{X} to \eqn{j \neq i}{j!=i}.
 This function is a wrapper of both \code{blopi_lpsolve} and \code{blopi_glpk}.
-
-\code{}
-
-\code{blopi_lpsolve} solves the problem using the \pkg{lpSolverAPI} R package
-which implements the lp_solver library.
-
-\code{blopi_glpk} solves the problem using the \pkg{Rglpk} R package
-which implements the GNU Linear Programming Kit.
 }
 \details{
 Both \code{W} and \code{p} are passed to \code{\link{weighted_norm}}.

@@ -2,7 +2,7 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 matching_group_cpp <- function(Treat, exact, zeroindex = 1L) {
-    .Call('blopmatch_matching_group_cpp', PACKAGE = 'blopmatch', Treat, exact, zeroindex)
+    .Call('_blopmatch_matching_group_cpp', PACKAGE = 'blopmatch', Treat, exact, zeroindex)
 }
 
 #' Weighted Norm
@@ -32,6 +32,6 @@ matching_group_cpp <- function(Treat, exact, zeroindex = 1L) {
 #' weighted_norm(X, W, 1.0)
 #' 
 weighted_norm <- function(X, W, p = 1.0) {
-    .Call('blopmatch_weighted_norm', PACKAGE = 'blopmatch', X, W, p)
+    .Call('_blopmatch_weighted_norm', PACKAGE = 'blopmatch', X, W, p)
 }
 
