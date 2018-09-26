@@ -100,7 +100,7 @@ blop <- function(
   # Checking out which ones were't solved perfectly
   status <- sapply(ans, function(x) {
     if (!length(x)) -1
-    else if (any(x[["slack"]] != 0)) 1
+    # else if (any(x[["slack"]] != 0)) 1
     else 0
   })
   
@@ -148,45 +148,79 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
   N <- nrow(X)
   K <- ncol(X)
   
-  my.lp <- lpSolveAPI::make.lp(K + 1, N + K*2)
+  # Initializing the LP0
+  lp_P0 <- lpSolveAPI::make.lp(nrow = K + 1, ncol = N + K*2)
+  on.exit(lpSolveAPI::delete.lp(lprec = lp_P0))
   
   # Setting columns ------------------------------------------------------------
-  # lambda columns
+  # Mu columns
+  ones_k <- c(rep(1, k), 0)
+  for (j in 1:K)
+    lpSolveAPI::set.column(lprec = lp_P0, j, ones_k)
+  
+  # Eta columns
+  for (j in (1:K + K))
+    lpSolveAPI::set.column(lprec = lp_P0, j, -ones_k)
+  
+  # Phi columns
   for (j in 1:N)
-    lpSolveAPI::set.column(my.lp, j, c(X[j,], 1))
+    lpSolveAPI::set.column(lprec = lp_P0, j + 2*K, c(X[j,], 1))
   
-  # mu
-  for (j in (1:K + N))
-    lpSolveAPI::set.column(my.lp, j, c(rep(1, k), 0))
+  # Objective function 
+  lpSolveAPI::set.objfn(lprec = lp_P0, c(rep(1, K*2), rep(0, N)))
   
-  # eta
-  for (j in (1:K + N + K))
-    lpSolveAPI::set.column(my.lp, j, c(rep(-1, k), 0))
-  
-  # Objective function ---------------------------------------------------------
-  lpSolveAPI::set.objfn(my.lp, rep(1, N+K*2))
-  
-  # Constraints ----------------------------------------------------------------
+  # Constraints 
   # Recall: We have 
   # sum(lambda) == 1: 1
   # {1 = "<=", 2 = ">=", 3 = "="}
-  lpSolveAPI::set.constr.type(my.lp, rep(3, K+1))
-  lpSolveAPI::set.rhs(my.lp, c(xi, 1))
-  lpSolveAPI::set.bounds(my.lp, rep(0, N + 2*K))
+  lpSolveAPI::set.constr.type(lprec = lp_P0, rep(3, K+1))
+  lpSolveAPI::set.rhs(lprec = lp_P0, c(xi, 1))
+  lpSolveAPI::set.bounds(lprec = lp_P0, lower = rep(0, N + 2*K))
   
   # Solving the problem
-  ans <- lpSolveAPI::solve.lpExtPtr(my.lp)
+  ans <- lpSolveAPI::solve.lpExtPtr(a=lp_P0)
+  
+  # Generating feasible X
+  xi_feasible <- lpSolveAPI::get.variables(lprec = lp_P0)[1:(2*K)]
+  xi_feasible <- xi - (xi_feasible[1:K] - xi_feasible[(1 + K):(K + K)])
+  basis_sol   <- lpSolveAPI::get.variables(lprec = lp_P0)[1:N + 2*K]
+  
+  
+  # Setting up P1 --------------------------------------------------------------
+  
+  # Initialiozing the problem
+  lp_P1 <- lpSolveAPI::make.lp(nrow = K + 1, ncol = N)
+  on.exit(lpSolveAPI::delete.lp(lprec = lp_P1))
+  
+  # Omega columns
+  for (j in 1:N)
+    lpSolveAPI::set.column(lprec = lp_P1, j, c(X[j,], 1))
+  
+  # Objective function 
+  lpSolveAPI::set.objfn(lprec = lp_P1, D)
+  
+  # Constraints
+  lpSolveAPI::set.constr.type(lprec = lp_P1, rep(3, K + 1))
+  lpSolveAPI::set.rhs(lprec = lp_P1, c(xi_feasible, 1))
+  lpSolveAPI::set.bounds(lprec = lp_P1, lower = rep(0, N))
+  
+  # Solving the problem
+  lpSolveAPI::set.basis(lp_P1, lpSolveAPI::guess.basis(lp_P1, basis_sol))
+  lpSolveAPI::write.lp(lprec = lp_P1, "misc/example1.lp", type = "freemps")
+  lpSolveAPI::lp.control(lprec = lp_P1, basis.crash="mostfeasible", presolve="impliedslk")
+  ans <- lpSolveAPI::solve.lpExtPtr(a = lp_P1)
   
   structure(
     list(
-      obj    = lpSolveAPI::get.objective(my.lp),
+      obj    = lpSolveAPI::get.objective(lprec = lp_P1),
       lambda = methods::as(
-        matrix(lpSolveAPI::get.variables(my.lp)[1:N], nrow=1),
+        matrix(lpSolveAPI::get.variables(lprec = lp_P1), nrow=1),
         "dgCMatrix"),
-      slack  = lpSolveAPI::get.variables(my.lp)[(N + 1)],
-      constr = lpSolveAPI::get.constraints(my.lp),
+      # slack  = lpSolveAPI::get.variables(my.lp)[(N + 1)],
+      constr = lpSolveAPI::get.constraints(lprec = lp_P1),
       status = ans,
-      xi     = xi
+      xi     = xi,
+      xi_feasible = xi_feasible
     ), class = "blopmatch_matchi"
   )
   
@@ -239,7 +273,7 @@ blopi_glpk <- function(xi, X, D = NULL) {
         matrix(ans$solution[1L:N], nrow=1),
         "dgCMatrix"
         ),
-      slack  = ans$solution[(N + 1L):(N + K + 1L)],
+      # slack  = ans$solution[(N + 1L):(N + K + 1L)],
       constr = NA,
       status = ans$status,
       xi     = xi
