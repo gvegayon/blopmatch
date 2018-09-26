@@ -154,13 +154,13 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
   
   # Setting columns ------------------------------------------------------------
   # Mu columns
-  ones_k <- c(rep(1, k), 0)
+  ones_k <- rbind(diag(k), 0)
   for (j in 1:K)
-    lpSolveAPI::set.column(lprec = lp_P0, j, ones_k)
+    lpSolveAPI::set.column(lprec = lp_P0, j, ones_k[,j])
   
   # Eta columns
-  for (j in (1:K + K))
-    lpSolveAPI::set.column(lprec = lp_P0, j, -ones_k)
+  for (j in 1:K)
+    lpSolveAPI::set.column(lprec = lp_P0, j + k, -ones_k[,j])
   
   # Phi columns
   for (j in 1:N)
@@ -178,7 +178,10 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
   lpSolveAPI::set.bounds(lprec = lp_P0, lower = rep(0, N + 2*K))
   
   # Solving the problem
+  # lpSolveAPI::lp.control(lp_P0, mip.gap=1e-20)
+  # lpSolveAPI::guess.basis(lp_P0, )
   ans <- lpSolveAPI::solve.lpExtPtr(a=lp_P0)
+  lpSolveAPI::write.lp(lprec = lp_P0, "misc/example0.lp", type = "lp")
   
   # Generating feasible X
   xi_feasible <- lpSolveAPI::get.variables(lprec = lp_P0)[1:(2*K)]
@@ -205,7 +208,7 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
   lpSolveAPI::set.bounds(lprec = lp_P1, lower = rep(0, N))
   
   # Solving the problem
-  lpSolveAPI::set.basis(lp_P1, lpSolveAPI::guess.basis(lp_P1, basis_sol))
+  # lpSolveAPI::set.basis(lp_P1, lpSolveAPI::guess.basis(lp_P1, basis_sol))
   lpSolveAPI::write.lp(lprec = lp_P1, "misc/example1.lp", type = "freemps")
   lpSolveAPI::lp.control(lprec = lp_P1, basis.crash="mostfeasible", presolve="impliedslk")
   ans <- lpSolveAPI::solve.lpExtPtr(a = lp_P1)
@@ -216,7 +219,6 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
       lambda = methods::as(
         matrix(lpSolveAPI::get.variables(lprec = lp_P1), nrow=1),
         "dgCMatrix"),
-      # slack  = lpSolveAPI::get.variables(my.lp)[(N + 1)],
       constr = lpSolveAPI::get.constraints(lprec = lp_P1),
       status = ans,
       xi     = xi,

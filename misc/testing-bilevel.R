@@ -4,9 +4,9 @@ library(blopmatch)
 set.seed(1144)
 
 k <- 2
-n <- 10
-xi <- runif(k)
-X  <- matrix(runif(k*n), ncol=k) 
+n <- 100
+xi <- runif(k) # cbind(1,1)
+X  <- matrix(runif(k*n), ncol=k) # matrix(c(.5,.8,.5,0), ncol=2, byrow = TRUE)
 D  <- Map(
   function(xj) weighted_norm(rbind(xi, xj), diag(k))[1,2],
   xj = lapply(1:n, function(i) X[i,])
@@ -26,12 +26,12 @@ ans2$solution %*% X %>% as.matrix() %>% rbind(., xi) %>% dist
 # Objective vs matched
 xihat <- ans$lambda %*% X
 
-plot(x=X[,1], y=X[,2],
-     xlim = range(c(X[,1], xi[1])),
-     ylim = range(c(X[,2], xi[2])))
+plot(x=X[,1], y=X[,2], xlim = c(0,1), ylim = c(0,1))
 points(x=xi[1], y=xi[2], col="red", pch=2)
 points(x=xihat[1], y=xihat[2], col="blue", pch=3)
 points(x=ans$xi_feasible[1], y=ans$xi_feasible[2], col="green", pch=4)
 
-xihat
-xi
+
+weighted_norm(
+  as.matrix(rbind(rbind(xi, xihat), X)),
+  diag(k))[1,]
