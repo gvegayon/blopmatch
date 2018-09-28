@@ -37,11 +37,11 @@
 #' 
 blop <- function(
   X, 
-  Treat = rep(-1, nrow(X)), 
-  exact = NULL, 
-  solver="glpk",
-  W = diag(ncol(X)),
-  p = 1
+  Treat  = rep(-1, nrow(X)), 
+  exact  = NULL, 
+  solver = "glpk",
+  W      = diag(ncol(X)),
+  p      = 1
   ) {
   # Solving the BLOP for each one
   iseq <- 1L:nrow(X)
@@ -54,7 +54,7 @@ blop <- function(
   
   # Solving the problem
   ans <- if (solver == "glpk")
-    lapply(iseq, function(i, covars) {
+    parallel::mclapply(iseq, function(i, covars) {
       
       # Checking if it can be matched or not
       if (!length(groups[[i]])) {
@@ -74,7 +74,7 @@ blop <- function(
       
       
       
-      }, covars=X)
+      }, covars=X, mc.cores = 2)
   else if (solver == "lpsolve")
     lapply(iseq, function(i, covars) {
       
@@ -100,6 +100,7 @@ blop <- function(
   # Checking out which ones were't solved perfectly
   status <- sapply(ans, function(x) {
     if (!length(x)) -1
+    else if (any(x$xi != x$xi_feasible)) 1
     # else if (any(x[["slack"]] != 0)) 1
     else 0
   })
@@ -127,40 +128,22 @@ blop <- function(
 blopi_lpsolve <- function(xi, X, D = NULL) {
   
   # P0: Find the feasible match ------------------------------------------------
-  
-  # Problem:
-  #  (Z, phi) = argmin \sum_k (mu_k + eta_k)
-  #    s.t.
-  #    X_0\phi + \mu - v = x_i
-  #    \phi \in Simplex
-  #  But Z = X_0\phi can be plugged in, and the computed
-  # Constraints:
-  #  sum(lambda) = 1 : 1 (Simplex)
-  #  X_0\phi + \mu - v = x_i: k
-  #  TOTAL: k + 1
-  #
-  # Variables:
-  #  lambda: n
-  #  mu, eta: k * 2
-  #  slack variables: 0
-  #  TOTAL: n + k*2 
-  
   N <- nrow(X)
   K <- ncol(X)
   
   # Initializing the LP0
   lp_P0 <- lpSolveAPI::make.lp(nrow = K + 1, ncol = N + K*2)
-  on.exit(lpSolveAPI::delete.lp(lprec = lp_P0))
+  # on.exit(lpSolveAPI::delete.lp(lprec = lp_P0))
   
   # Setting columns ------------------------------------------------------------
   # Mu columns
-  ones_k <- rbind(diag(k), 0)
+  ones_k <- rbind(diag(K), 0)
   for (j in 1:K)
     lpSolveAPI::set.column(lprec = lp_P0, j, ones_k[,j])
   
   # Eta columns
   for (j in 1:K)
-    lpSolveAPI::set.column(lprec = lp_P0, j + k, -ones_k[,j])
+    lpSolveAPI::set.column(lprec = lp_P0, j + K, -ones_k[,j])
   
   # Phi columns
   for (j in 1:N)
@@ -178,8 +161,6 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
   lpSolveAPI::set.bounds(lprec = lp_P0, lower = rep(0, N + 2*K))
   
   # Solving the problem
-  # lpSolveAPI::lp.control(lp_P0, mip.gap=1e-20)
-  # lpSolveAPI::guess.basis(lp_P0, )
   ans <- lpSolveAPI::solve.lpExtPtr(a=lp_P0)
   lpSolveAPI::write.lp(lprec = lp_P0, "misc/example0.lp", type = "lp")
   
@@ -187,13 +168,13 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
   xi_feasible <- lpSolveAPI::get.variables(lprec = lp_P0)[1:(2*K)]
   xi_feasible <- xi - (xi_feasible[1:K] - xi_feasible[(1 + K):(K + K)])
   basis_sol   <- lpSolveAPI::get.variables(lprec = lp_P0)[1:N + 2*K]
-  
+  # lpSolveAPI::delete.lp(lprec = lp_P0)
   
   # Setting up P1 --------------------------------------------------------------
   
   # Initialiozing the problem
   lp_P1 <- lpSolveAPI::make.lp(nrow = K + 1, ncol = N)
-  on.exit(lpSolveAPI::delete.lp(lprec = lp_P1))
+  # on.exit(lpSolveAPI::delete.lp(lprec = lp_P1))
   
   # Omega columns
   for (j in 1:N)
@@ -213,7 +194,8 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
   lpSolveAPI::lp.control(lprec = lp_P1, basis.crash="mostfeasible", presolve="impliedslk")
   ans <- lpSolveAPI::solve.lpExtPtr(a = lp_P1)
   
-  structure(
+  
+  ans <- structure(
     list(
       obj    = lpSolveAPI::get.objective(lprec = lp_P1),
       lambda = methods::as(
@@ -225,6 +207,10 @@ blopi_lpsolve <- function(xi, X, D = NULL) {
       xi_feasible = xi_feasible
     ), class = "blopmatch_matchi"
   )
+  
+  # lpSolveAPI::delete.lp(lprec = lp_P1)
+  
+  ans
   
 }
 
@@ -245,40 +231,36 @@ blopi_glpk <- function(xi, X, D = NULL) {
   N <- nrow(X)
   K <- ncol(X)
   
-  # Objective function ---------------------------------------------------------
-  #  lambda*distance
-  if (!length(D))
-    D <- apply(X, 1, function(x) stats::dist(rbind(xi, x)))
+  # P0 ------------------------------------------------------------------
+  lp_P0 <- Rglpk::Rglpk_solve_LP(
+    obj = c(rep(1, K*2), rep(0, N)),
+    mat = cbind(rbind(diag(K), 0), -rbind(diag(K), 0),rbind(t(X), 1)), 
+    dir = rep("==", K + 1),
+    rhs = c(as.vector(xi), 1)
+  )
   
-  # Solving the LP
-  ans <- Rglpk::Rglpk_solve_LP(
-    obj   = c(D, rep(1, K + 1)),               # |lambda| + |slack|
-    mat   = rbind(
-      c(rep(1, N), rep(-1, K + 1)),        # sum(lambda + slack) = 1
-      cbind(
-        t(X),                    # Proj(X) = X
-        matrix(-1, nrow = K, ncol = (K + 1))     # Slack vars
-      )
-    ),
-    dir    = rep("==", K + 1),
-    rhs    = c(1, xi),
-    bounds = list(
-      lower = list(ind = 1L:N, val = rep(0, N))
-    ),
-    control = list(presolve = FALSE, tm_limit = 500)
+  xi_feasible <- xi - with(lp_P0, solution[1:K] - solution[1:K + K])
+  
+  # P1 ------------------------------------------------------------------
+  lp_P1 <- Rglpk::Rglpk_solve_LP(
+    obj = D,
+    mat = rbind(t(X), 1), 
+    dir = rep("==", K + 1),
+    rhs = c(as.vector(xi_feasible), 1)
   )
   
   structure(
     list(
-      obj    = ans$objval,
+      obj    = lp_P1$optimum,
       lambda = methods::as(
-        matrix(ans$solution[1L:N], nrow=1),
+        matrix(lp_P1$solution[1L:N], nrow=1),
         "dgCMatrix"
         ),
       # slack  = ans$solution[(N + 1L):(N + K + 1L)],
-      constr = NA,
-      status = ans$status,
-      xi     = xi
+      constr = lp_P1$auxiliary$primal,
+      status = lp_P1$status,
+      xi     = xi,
+      xi_feasible = xi_feasible
     ), class = "blopmatch_matchi"
   )
   
@@ -296,7 +278,7 @@ print.blopmatch_match <- function(x, ...) {
   cat(sprintf("BILEVEL OPTIMIZATION MATCHING PROBLEM\n"))
   cat(
     sep="",
-    sprintf("%% of perfect matches: %.2f%%\n", (1 - binded/N) *100),
+    sprintf("%% of problems solved: %.2f%%\n", (1 - binded/N) *100),
     sprintf("N: %i, K: %i\n", N, K)
   )
 }
@@ -305,7 +287,7 @@ print.blopmatch_match <- function(x, ...) {
 plot.blopmatch_match <- function(x, y=1:min(2, ncol(x$X)), ...) {
   
   plot(x$X[,y,drop=FALSE], pch=20, col="lightgray")
-  binded <- which(x$status == 1)
+  binded <- which(x$status !=0)
   if (length(binded))
     text(x$X[binded,y,drop=FALSE], labels = binded, col="red")
   

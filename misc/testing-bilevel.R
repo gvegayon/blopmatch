@@ -3,8 +3,8 @@ library(blopmatch)
 
 set.seed(1144)
 
-k <- 2
-n <- 100
+k <- 10
+n <- 20
 xi <- runif(k) # cbind(1,1)
 X  <- matrix(runif(k*n), ncol=k) # matrix(c(.5,.8,.5,0), ncol=2, byrow = TRUE)
 D  <- Map(
@@ -13,25 +13,53 @@ D  <- Map(
   ) %>% unlist
 
           
-ans <- blopi_lpsolve(xi, X, D)
+ans0 <- blopi_lpsolve(xi, X, D)
+ans1 <- blopi_glpk(xi, X, D)
 
-f <- Rglpk::Rglpk_read_file("misc/example1.lp", "MPS_free")
-ans2 <- Rglpk::Rglpk_solve_LP(
-  f$objective, f$constraints[[1]], f$constraints[[2]],
-  f$constraints[[3]], f$bounds, f$types, f$maximum)
+# microbenchmark::microbenchmark(
+#   lpsolve = blopi_lpsolve(xi, X, D),
+#   glpk = blopi_glpk(xi, X, D)
+# )
 
-ans$lambda %*% X %>% as.matrix() %>% rbind(., xi) %>% dist
-ans2$solution %*% X %>% as.matrix() %>% rbind(., xi) %>% dist
+ans0$lambda %*% X %>% as.matrix() %>% rbind(., xi) %>% dist
+ans1$lambda %*% X %>% as.matrix() %>% rbind(., xi) %>% dist
 
 # Objective vs matched
-xihat <- ans$lambda %*% X
+xihat <- ans0$lambda %*% X
 
 plot(x=X[,1], y=X[,2], xlim = c(0,1), ylim = c(0,1))
 points(x=xi[1], y=xi[2], col="red", pch=2)
 points(x=xihat[1], y=xihat[2], col="blue", pch=3)
-points(x=ans$xi_feasible[1], y=ans$xi_feasible[2], col="green", pch=4)
+points(x=ans1$xi_feasible[1], y=ans1$xi_feasible[2], col="green", pch=4)
 
+ans0$constr
+ans1$constr
 
 weighted_norm(
   as.matrix(rbind(rbind(xi, xihat), X)),
   diag(k))[1,]
+
+
+data(nsw)
+# nsw <- lalonde
+nsw$re75 <- scale(nsw$re75)
+X <- as.matrix(subset(
+  nsw, select = c("age", "education", "black", "hispanic", "married", "nodegree","re75"))
+)
+bsol <- blop(
+  X     = X,
+  Treat = nsw$treat,
+  p     = 2,
+  # W     = solve(var(X)),
+  # solver = "lpsolve"
+  )
+
+
+teffect(bsol, nsw$re78, "ate")
+teffect(bsol, nsw$re78, "att")
+
+# > teffect(bsol, nsw$re78, "ate")
+# [1] 938.4912
+# > teffect(bsol, nsw$re78, "att")
+# [1] 614.415
+
