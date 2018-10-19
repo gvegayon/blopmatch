@@ -43,7 +43,7 @@ weighted_norm <- function(X, W, p = 1.0) {
 #' @examples
 #' obj      <- c(10, 6, 4)
 #' subj_lhs <- matrix(c(1, 10, 2, 1, 4, 2, 1, 5, 6), ncol = 3)
-#' subj_rhs <- (100, 600, 300)
+#' subj_rhs <- c(100, 600, 300)
 #' glpk_example(obj, subj_lhs, subj_rhs)
 glpk_example <- function(obj, subj_lhs, subj_rhs, pname = "sample") {
     .Call('_blopmatch_glpk_example', PACKAGE = 'blopmatch', obj, subj_lhs, subj_rhs, pname)
