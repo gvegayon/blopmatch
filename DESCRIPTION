@@ -1,6 +1,6 @@
 Package: blopmatch
 Title: Matching Estimator based on a Bilevel Optimization Problem
-Version: 0.0.0.9000
+Version: 0.0.9000
 Authors@R: person("George", "Vega Yon", email = "g.vegayon@gmail.com", role = c("aut", "cre"))
 Description: An implementation of Díaz, Rau and Rivera (2015) matching estimator
     for causal inference. The authors propose a matching estimator based on a
@@ -31,4 +31,9 @@ Suggests:
     testthat,
     covr
 VignetteBuilder: knitr
-LinkingTo: Rcpp, RcppArmadillo
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo,
+    rcppglpk
+Remotes:  
+    https://github.com/gvegayon/rcppglpk

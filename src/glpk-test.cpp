@@ -1,5 +1,4 @@
-#include <Rcpp.h>
-#include "glpk-class.h"
+#include <rcppglpk.h>
 
 using namespace Rcpp;
 
@@ -31,7 +30,8 @@ List glpk_example(
     stop("The constraints don't have as many rows as the RHS.");
   
   // Creating the object
-  glpkObj lp(obj, subj_lhs, subj_rhs);
+  
+  rcppglpk::LP lp(obj, subj_lhs, subj_rhs, GLP_MAX);
   
   // Calling the solver
   lp.simplex();
