@@ -6,6 +6,18 @@
 
 using namespace Rcpp;
 
+// tag_duplicates
+List tag_duplicates(const NumericMatrix& x, bool zeroindex);
+RcppExport SEXP _blopmatch_tag_duplicates(SEXP xSEXP, SEXP zeroindexSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const NumericMatrix& >::type x(xSEXP);
+    Rcpp::traits::input_parameter< bool >::type zeroindex(zeroindexSEXP);
+    rcpp_result_gen = Rcpp::wrap(tag_duplicates(x, zeroindex));
+    return rcpp_result_gen;
+END_RCPP
+}
 // matching_group_cpp
 List matching_group_cpp(const arma::ivec& Treat, const arma::mat& exact, int zeroindex);
 RcppExport SEXP _blopmatch_matching_group_cpp(SEXP TreatSEXP, SEXP exactSEXP, SEXP zeroindexSEXP) {
@@ -32,25 +44,11 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// glpk_example
-List glpk_example(const NumericVector& obj, const NumericMatrix& subj_lhs, const NumericVector& subj_rhs, const StringVector pname);
-RcppExport SEXP _blopmatch_glpk_example(SEXP objSEXP, SEXP subj_lhsSEXP, SEXP subj_rhsSEXP, SEXP pnameSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericVector& >::type obj(objSEXP);
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type subj_lhs(subj_lhsSEXP);
-    Rcpp::traits::input_parameter< const NumericVector& >::type subj_rhs(subj_rhsSEXP);
-    Rcpp::traits::input_parameter< const StringVector >::type pname(pnameSEXP);
-    rcpp_result_gen = Rcpp::wrap(glpk_example(obj, subj_lhs, subj_rhs, pname));
-    return rcpp_result_gen;
-END_RCPP
-}
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_blopmatch_tag_duplicates", (DL_FUNC) &_blopmatch_tag_duplicates, 2},
     {"_blopmatch_matching_group_cpp", (DL_FUNC) &_blopmatch_matching_group_cpp, 3},
     {"_blopmatch_weighted_norm", (DL_FUNC) &_blopmatch_weighted_norm, 3},
-    {"_blopmatch_glpk_example", (DL_FUNC) &_blopmatch_glpk_example, 4},
     {NULL, NULL, 0}
 };
 
