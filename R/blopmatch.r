@@ -43,6 +43,10 @@ blop <- function(
   W      = diag(ncol(X)),
   p      = 1
   ) {
+  
+  # Reducing the dataset to those where we know the problem will be equivalent
+  duplicates <- group_duplicates(X, Treat = Treat)
+  
   # Solving the BLOP for each one
   iseq <- 1L:nrow(X)
   
@@ -67,7 +71,7 @@ blop <- function(
         blopi_glpk(
           xi = covars[i,,drop=TRUE],
           X  = covars[groups[[i]],,drop=FALSE],
-          D = D[i, groups[[i]]]
+          D  = D[i, groups[[i]]]
           ),
         list(against = groups[[i]])
       )

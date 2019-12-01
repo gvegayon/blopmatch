@@ -24,6 +24,7 @@ Imports:
     Matrix,
     methods,
     MatchIt
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 6.1.1
 Suggests:
     knitr,

@@ -3,7 +3,7 @@ library(blopmatch)
 
 set.seed(1144)
 
-k <- 10
+k <- 2
 n <- 20
 xi <- runif(k) # cbind(1,1)
 X  <- matrix(runif(k*n), ncol=k) # matrix(c(.5,.8,.5,0), ncol=2, byrow = TRUE)

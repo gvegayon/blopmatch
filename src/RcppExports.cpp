@@ -6,18 +6,6 @@
 
 using namespace Rcpp;
 
-// tag_duplicates
-List tag_duplicates(const NumericMatrix& x, bool zeroindex);
-RcppExport SEXP _blopmatch_tag_duplicates(SEXP xSEXP, SEXP zeroindexSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< const NumericMatrix& >::type x(xSEXP);
-    Rcpp::traits::input_parameter< bool >::type zeroindex(zeroindexSEXP);
-    rcpp_result_gen = Rcpp::wrap(tag_duplicates(x, zeroindex));
-    return rcpp_result_gen;
-END_RCPP
-}
 // matching_group_cpp
 List matching_group_cpp(const arma::ivec& Treat, const arma::mat& exact, int zeroindex);
 RcppExport SEXP _blopmatch_matching_group_cpp(SEXP TreatSEXP, SEXP exactSEXP, SEXP zeroindexSEXP) {
@@ -46,7 +34,6 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_blopmatch_tag_duplicates", (DL_FUNC) &_blopmatch_tag_duplicates, 2},
     {"_blopmatch_matching_group_cpp", (DL_FUNC) &_blopmatch_matching_group_cpp, 3},
     {"_blopmatch_weighted_norm", (DL_FUNC) &_blopmatch_weighted_norm, 3},
     {NULL, NULL, 0}
